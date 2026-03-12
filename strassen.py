@@ -22,23 +22,9 @@ def create_test_matrix(n):
 
     return M
 
-def subtract_matrices(A,B,n):
-    C = [[0]*n for i in range(n)] 
-    for i in range(n):
-        for j in range(n):
-            C[i][j] = A[i][j] - B[i][j]
-    return C
-
-def add_matrices(A,B,n):
-    C = [[0]*n for i in range(n)] 
-    for i in range(n):
-        for j in range(n):
-            C[i][j] = A[i][j] + B[i][j]
-    return C    
-    
-
 
 def conventional_mm(A, B, n):
+    # Not using any kind of numpy function for this
     # Assume A and B are both nxn matrices
     # Let C be the nxn matrix representing AB
     C = [[0]*n for i in range(n)] # Initialize C to just 0's
@@ -53,24 +39,57 @@ def conventional_mm(A, B, n):
 
 def strassen(X,Y,n):
     # Let's first assume that n is even:
-    if n % 2 == 0:
-        #divide up X:
-        A = X[:n/2][:n/2]
-        B = X[:n/2][n/2:]
-        C = X[n/2:][:n/2]
-        D = X[n/2:][n/2:]
-        #divide up Y:
-        E = Y[:n/2][:n/2]
-        F = Y[:n/2][n/2:]
-        G = Y[n/2:][:n/2]
-        H = Y[n/2:][n/2:]
-        #products:
-        P_1 = strassen(A, subtract_matrices(F,H,n/2))
-        P_2 = strassen(add_matrices(A,B, n/2), H)
-        P_3 = strassen(add_matrices(C,D,n/2), E)
-        P_4 = strassen(D, subtract_matrices(G-H,n/2))
-        P_5 = strassen(add_matrices(A,D,n/2), add_matrices(E,H,n/2))
-        P_6=  strassen(subtract_matrices(B,D,n/2), add_matrices(G,H,n/2))
-        P_7 = strassen(subtract_matrices(C,A,n/2), add_matrices(E,F,n/2))
+    New = [[0]*n for i in range(n)]
+    
+    if n % 2 == 0 and n != 1:
+        #divide up X and Y: 
+        new_size = int(n/2)
+        A = [[0 for _ in range(new_size)] for _ in range(new_size)]
+        B = [[0 for _ in range(new_size)] for _ in range(new_size)]
+        C = [[0 for _ in range(new_size)] for _ in range(new_size)]
+        D = [[0 for _ in range(new_size)] for _ in range(new_size)]
+        E = [[0 for _ in range(new_size)] for _ in range(new_size)]
+        F = [[0 for _ in range(new_size)] for _ in range(new_size)]
+        G = [[0 for _ in range(new_size)] for _ in range(new_size)]
+        H = [[0 for _ in range(new_size)] for _ in range(new_size)]
+         
+        for i in range(new_size):
+            for j in range(new_size):
+                A = X[i][j]
+                B = X[i][j + new_size]
+                C = X[i + new_size][j]
+                D = X[i + new_size][j + new_size]
+                E = Y[i][j]
+                F = Y[i][j + new_size]
+                G = Y[i + new_size][j]
+                H = Y[i + new_size][j + new_size]
 
-    return None
+        #products:
+        P1 = strassen(A, np.subtract(F,H), new_size)
+        P2 = strassen(np.add(A,B, n/2), H, new_size)
+        P3 = strassen(np.add(C,D,n/2), E, new_size)
+        P4 = strassen(D, np.subtract(G-H,n/2), new_size)
+        P5 = strassen(np.add(A,D,n/2), np.add(E,H,n/2), new_size)
+        P6=  strassen(np.subtract(B,D,n/2), np.add(G,H,n/2), new_size)
+        P7 = strassen(np.subtract(C,A,n/2), np.add(E,F,n/2), new_size)
+
+        upper_left = np.add(np.subtract(P4,P2), np.add(P5, P6))
+        upper_right = np.add(P1, P2)
+        lower_left = np.add(P3, P4)
+        lower_right = np.add(np.subtract(P1,P3), np.add(P5, P7))
+
+        #combine:
+
+        for i in range(new_size):
+            for j in range(new_size):
+                New[i][j]= upper_left[i][j]
+                X[i][j + new_size] = upper_right[i][j]
+                X[i + new_size][j] = lower_right[i][j]
+                X[i + new_size][j + new_size] = lower_left[i][j]
+        
+
+    return New
+
+
+X = np.array([[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]])
+print(strassen(X,X, 4))
