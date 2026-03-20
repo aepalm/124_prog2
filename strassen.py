@@ -39,36 +39,40 @@ def conventional_mm(A, B, n):
 
 def strassen(X,Y,n):
     # Let's first assume that n is even:
+
+    if n == 1:
+        return [[X[0][0] * Y[0][0]]]
+
     New = [[0]*n for i in range(n)]
     
     if n % 2 == 0:
         #divide up X and Y: 
-        new_size =  int(n/2)
-        A = [[0 for _ in range( new_size)] for _ in range( new_size)]
-        B = [[0 for _ in range( new_size)] for _ in range( new_size)]
-        C = [[0 for _ in range( new_size)] for _ in range( new_size)]
-        D = [[0 for _ in range( new_size)] for _ in range( new_size)]
-        E = [[0 for _ in range( new_size)] for _ in range( new_size)]
-        F = [[0 for _ in range( new_size)] for _ in range( new_size)]
-        G = [[0 for _ in range( new_size)] for _ in range( new_size)]
-        H = [[0 for _ in range( new_size)] for _ in range( new_size)]
+        new_size =  n//2
+        A = [[0]*new_size for _ in range(new_size)]
+        B = [[0]*new_size for _ in range(new_size)]
+        C = [[0]*new_size for _ in range(new_size)]
+        D = [[0]*new_size for _ in range(new_size)]
+        E = [[0]*new_size for _ in range(new_size)]
+        F = [[0]*new_size for _ in range(new_size)]
+        G = [[0]*new_size for _ in range(new_size)]
+        H = [[0]*new_size for _ in range(new_size)]
          
         for i in range( new_size):
             for j in range( new_size):
                 A[i][j] = X[i][j]
-                B[i][j] = X[i][j +  new_size]
-                C[i][j] = X[i +  new_size][j]
-                D[i][j] = X[i +  new_size][j +  new_size]
+                B[i][j] = X[i][j + new_size]
+                C[i][j] = X[i + new_size][j]
+                D[i][j] = X[i + new_size][j + new_size]
                 E[i][j] = Y[i][j]
-                F[i][j] = Y[i][j +  new_size]
-                G[i][j] = Y[i +  new_size][j]
-                H[i][j] = Y[i +  new_size][j +  new_size]
+                F[i][j] = Y[i][j + new_size]
+                G[i][j] = Y[i + new_size][j]
+                H[i][j] = Y[i + new_size][j + new_size]
 
         #products:
         P1 = strassen(A, np.subtract(F,H),  new_size)
         P2 = strassen(np.add(A,B), H,  new_size)
         P3 = strassen(np.add(C,D), E,  new_size)
-        P4 = strassen(D, np.subtract(G,H),  new_size)
+        P4 = strassen(D, np.subtract(G,E),  new_size)
         P5 = strassen(np.add(A,D), np.add(E,H),  new_size)
         P6=  strassen(np.subtract(B,D), np.add(G,H),  new_size)
         P7 = strassen(np.subtract(C,A), np.add(E,F),  new_size)
@@ -84,8 +88,8 @@ def strassen(X,Y,n):
             for j in range( new_size):
                 New[i][j]= upper_left[i][j]
                 New[i][j +  new_size] = upper_right[i][j]
-                New[i +  new_size][j] = lower_right[i][j]
-                New[i +  new_size][j +  new_size] = lower_left[i][j]
+                New[i + new_size][j] = lower_left[i][j]
+                New[i + new_size][j + new_size] = lower_right[i][j]
         
 
     return New
