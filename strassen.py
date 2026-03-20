@@ -116,65 +116,61 @@ def strassen(X,Y,n, n_0):
 
 
 def main():
+    flag = int(sys.argv[1])
+
     #experimentally optimize the cross-over point n_0
     #want to find the smallest n_0 possible
     #analytically we found n_0 = 15
+    if flag != 0:
+        # testing values 
+        sizes = [32, 33, 64, 65]
+        for size in sizes:
+            print("Matrix size: ", size)
+            for n_0 in range(15,25):
+                print("\t Testing n_0: ", n_0)
+                total_time = 0
+                for _ in range(20): #run each n_0 value 20 times to get an average time
+                    X = create_test_matrix(size)
+                    Y = create_test_matrix(size)
+                    start_time = time.perf_counter()
+                    A = strassen(X, Y, size, n_0)
+                    end_time = time.perf_counter()
+                    total_time += (end_time - start_time)
+                    #quick check correctness:
+                    if not equal_matrix(A, conventional_mm(X, Y, size)):
+                        print("Error: strassen and conventional mm do not match")
+                        sys.exit(1)
+                print("\t \t Average Time taken: ", total_time / 20)
+    else:
+        #after testing, n_0 = 21 is seemingly the best value for various sizes
+        #get other input arguments: dimension, inputfile
+        dimension = int(sys.argv[2])
+        inputfile = sys.argv[3]
+
+        # input file is an ASCII file with 2d^2 integers, one per line, representing A and B
+        # first d^2 integers are A, next d^2 integers are B
+        # in row-major order: a_01, a_02, ...
+        n_0 = 21
+        with open(inputfile, 'r') as f:
+            data = f.read().splitlines()
+        A = [[0]*dimension for i in range(dimension)]
+        B = [[0]*dimension for i in range(dimension)]
+
+        for i in range(dimension):
+            for j in range(dimension):
+                A[i][j] = int(data[i*dimension + j])
+                B[i][j] = int(data[dimension*dimension + i*dimension + j])
+
+        #call strassen on A and B, print the result       
+        C = strassen(A, B, dimension, n_0)
+        #quick check correctness:
+        if not equal_matrix(C, conventional_mm(A, B, dimension)):
+            print("Error: strassen and conventional mm do not match")
+            sys.exit(1)
+
+        for i in range(dimension):
+            print(C[i][i])
     
-    # testing values 
-    sizes = [32, 33, 64, 65]
-    for size in sizes:
-        print("Matrix size: ", size)
-        for n_0 in range(15,25):
-            print("\t Testing n_0: ", n_0)
-            total_time = 0
-            for _ in range(20): #run each n_0 value 20 times to get an average time
-                X = create_test_matrix(size)
-                Y = create_test_matrix(size)
-                start_time = time.perf_counter()
-                A = strassen(X, Y, size, n_0)
-                end_time = time.perf_counter()
-                total_time += (end_time - start_time)
-                #quick check correctness:
-                if not equal_matrix(A, conventional_mm(X, Y, size)):
-                    print("Error: strassen and conventional mm do not match")
-                    sys.exit(1)
-            print("\t \t Average Time taken: ", total_time / 20)
-    
-    '''
-    #After testing, we found that n_0 = 15 is the best cross-over point, so we will use that for the final implementation
-    #get input arguments: flag, dimension, inputfile
-    flag = sys.argv[1]
-    dimension = int(sys.argv[2])
-    inputfile = sys.argv[3]
-
-    # input file is an ASCII file with 2d^2 integers, one per line, representing A and B
-    # first d^2 integers are A, next d^2 integers are B
-    # in row-major order: a_01, a_02, ...
-    with open(inputfile, 'r') as f:
-        data = f.read().splitlines()
-    A = [[0]*dimension for i in range(dimension)]
-    B = [[0]*dimension for i in range(dimension)]
-    for i in range(dimension):
-        for j in range(dimension):
-            A[i][j] = int(data[i*dimension + j])
-            B[i][j] = int(data[dimension*dimension + i*dimension + j])
-
-    #call strassen on A and B, print the result
-    for n_0 in range(10,30):
-        total_time = 0
-        for _ in range(5): #run each n_0 value 5 times to get an average time
-            start_time = time.perf_counter()
-            C = strassen(A, B, dimension, n_0)
-            end_time = time.perf_counter()
-            total_time += (end_time - start_time)
-            #quick check correctness:
-            if not equal_matrix(C, conventional_mm(A, B, dimension)):
-                print("Error: strassen and conventional mm do not match")
-                sys.exit(1)
-
-    for i in range(dimension):
-        print(C[i][i])
-    '''
 
 if __name__ == "__main__":    
     main()
