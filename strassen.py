@@ -1,27 +1,30 @@
-# Option 1: Single-source file
-# To run: python3 strassen.py <args>
-
-# Assume that the cost of any single arithmetic operation  is 1, and that
-# all other operations are free.
-
-# Goal: to multiply two n x n matrices, we start with Strassen's,
-# but at some value n_0, we switch to conventional alg
-
-# First, we want to analyitically try to find the cross-over point
-
-# Then, we try to find it experimentally using our code! We want to try and find
-# as small as possible point, which depends on how efficiently we can implement the alg
-
-# Finally, we do the "triangle in random graphs" part
+'''
+Option 1: Single-source file
+To run: python3 strassen.py <args>
+'''
 
 import numpy as np
+import time
+import sys
+
+def add_matrix(A, B):
+    n = len(A)
+    return [[A[i][j] + B[i][j] for j in range(n)] for i in range(n)]
+
+def sub_matrix(A, B):
+    n = len(A)
+    return [[A[i][j] - B[i][j] for j in range(n)] for i in range(n)]
+
+def equal_matrix(A, B):
+    n = len(A)
+    for i in range(n):
+        for j in range(n):
+            if A[i][j] != B[i][j]:
+                return False
+    return True
 
 def create_test_matrix(n):
-    M = [[0]*n for i in range(n)] # Initialize M to just 0's
-    # Add the random values
-
-    return M
-
+    return [[np.random.randint(-1, 2) for _ in range(n)] for _ in range(n)]
 
 def conventional_mm(A, B, n):
     # Not using any kind of numpy function for this
@@ -37,16 +40,17 @@ def conventional_mm(A, B, n):
 
     return C
 
-def strassen(X,Y,n):
-    # Let's first assume that n is even:
-
+def strassen(X,Y,n, n_0):
     if n == 1:
         return [[X[0][0] * Y[0][0]]]
-
-    New = [[0]*n for i in range(n)]
     
+    if n <= n_0: #cross-over point
+        return conventional_mm(X,Y,n)
+    
+    # Let's first assume that n is even:
     if n % 2 == 0:
         #divide up X and Y: 
+        New = [[0]*n for i in range(n)]
         new_size =  n//2
         A = [[0]*new_size for _ in range(new_size)]
         B = [[0]*new_size for _ in range(new_size)]
@@ -69,35 +73,90 @@ def strassen(X,Y,n):
                 H[i][j] = Y[i + new_size][j + new_size]
 
         #products:
-        P1 = strassen(A, np.subtract(F,H),  new_size)
-        P2 = strassen(np.add(A,B), H,  new_size)
-        P3 = strassen(np.add(C,D), E,  new_size)
-        P4 = strassen(D, np.subtract(G,E),  new_size)
-        P5 = strassen(np.add(A,D), np.add(E,H),  new_size)
-        P6=  strassen(np.subtract(B,D), np.add(G,H),  new_size)
-        P7 = strassen(np.subtract(C,A), np.add(E,F),  new_size)
+        P1 = strassen(A, sub_matrix(F,H),  new_size, n_0)
+        P2 = strassen(add_matrix(A,B), H,  new_size, n_0)
+        P3 = strassen(add_matrix(C,D), E,  new_size, n_0)
+        P4 = strassen(D, sub_matrix(G,E),  new_size, n_0)
+        P5 = strassen(add_matrix(A,D), add_matrix(E,H),  new_size, n_0)
+        P6=  strassen(sub_matrix(B,D), add_matrix(G,H),  new_size, n_0)
+        P7 = strassen(sub_matrix(C,A), add_matrix(E,F),  new_size, n_0)
 
-        upper_left = np.add(np.subtract(P4,P2), np.add(P5, P6))
-        upper_right = np.add(P1, P2)
-        lower_left = np.add(P3, P4)
-        lower_right = np.add(np.subtract(P1,P3), np.add(P5, P7))
+        upper_left = add_matrix(add_matrix(sub_matrix(P4, P2), P5), P6)
+        upper_right = add_matrix(P1, P2)
+        lower_left = add_matrix(P3, P4)
+        lower_right = add_matrix(add_matrix(sub_matrix(P1, P3), P5), P7)
 
-        #combine:
-
-        for i in range( new_size):
-            for j in range( new_size):
-                New[i][j]= upper_left[i][j]
-                New[i][j +  new_size] = upper_right[i][j]
+        for i in range(new_size):
+            for j in range(new_size):
+                New[i][j] = upper_left[i][j]
+                New[i][j + new_size] = upper_right[i][j]
                 New[i + new_size][j] = lower_left[i][j]
                 New[i + new_size][j + new_size] = lower_right[i][j]
         
+        return New
+    
+    else: #n is an odd number
+        #pad the matrices with 0's to make them even, call strassen on the new matrices, 
+        #then remove the padding from the result
+        X_padded = [[0]*(n+1) for i in range(n+1)]
+        Y_padded = [[0]*(n+1) for i in range(n+1)]
+        for i in range(n):
+            for j in range(n):
+                X_padded[i][j] = X[i][j]
+                Y_padded[i][j] = Y[i][j]
+                
+        result_padded = strassen(X_padded, Y_padded, n+1, n_0)
+        result = [[0]*n for i in range(n)]
+        for i in range(n):
+            for j in range(n):  
+                result[i][j] = result_padded[i][j]
+        return result
 
-    return New
 
 
-X = np.array([[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]])
-stras = strassen(X, X, 4)
-reg = conventional_mm(X, X, 4)
-for i in range(4):
-    for j in range(4):
-        print("i,j: ", i,j, "stras val:", stras[i][j], "reg val: ", reg[i][j])
+
+def main():
+    '''
+    #testing our functions
+    #even n
+    X = np.array([[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]])
+    stras = strassen(X, X, 4)
+    reg = conventional_mm(X, X, 4)
+    for i in range(4):
+        for j in range(4):
+            print("i,j: ", i,j, "stras val:", stras[i][j], "reg val: ", reg[i][j])
+            
+    #odd n
+    X = np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3]])
+    stras = strassen(X, X, 3,0)
+    reg = conventional_mm(X, X, 3)
+    for i in range(3):
+        for j in range(3):
+            print("i,j: ", i,j, "stras val:", stras[i][j], "reg val: ", reg[i][j])
+    '''
+    #xpirimentally optimize the cross-over point n_0
+    #want to find the smallest n_0 possible
+    #analytically we found n_0 = 15
+    sizes = [8, 16, 32, 64]
+    n_0_values = [2, 4, 8, 12, 16, 20, 24, 32]    
+    for size in sizes:
+        for n_0 in n_0_values:
+            total_time = 0
+            for _ in range(5): #run each n_0 value 5 times to get an average time
+                X = create_test_matrix(size)
+                Y = create_test_matrix(size)
+                start_time = time.perf_counter()
+                A = strassen(X, Y, size, n_0)
+                end_time = time.perf_counter()
+                total_time += (end_time - start_time)
+                #quick check correctness:
+                if not equal_matrix(A, conventional_mm(X, Y, size)):
+                    print("Error: strassen and conventional mm do not match")
+                    sys.exit(1)
+
+            print("n_0: ", n_0)
+            print("Average Time taken: ", total_time / 5)
+
+
+if __name__ == "__main__":    
+    main()
