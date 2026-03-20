@@ -113,7 +113,13 @@ def strassen(X,Y,n, n_0):
         return result
 
 
-
+def random_graph(n): # this is for task 3
+    # Create a random graph on 1024 vertices where each edge is 
+    # included with probability p for each of the following values of p: 
+    # p = 0.01, 0.02, 0.03, 0.04, and 0.05. Use (Strassen's) matrix 
+    # multiplication code to count the number of triangles in each of these graphs, 
+    # and compare it to the expected number of triangles, which is (1024 \choose 3)*p^3. 
+    return None
 
 def main():
     flag = int(sys.argv[1])
@@ -163,10 +169,6 @@ def main():
 
         #call strassen on A and B, print the result       
         C = strassen(A, B, dimension, n_0)
-        #quick check correctness:
-        if not equal_matrix(C, conventional_mm(A, B, dimension)):
-            print("Error: strassen and conventional mm do not match")
-            sys.exit(1)
 
         for i in range(dimension):
             print(C[i][i])
