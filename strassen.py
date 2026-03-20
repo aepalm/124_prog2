@@ -113,7 +113,7 @@ def strassen(X,Y,n, n_0):
         return result
 
 
-def random_graph(n): # this is for task 3
+def find_triangles(n): # this is for task 3
     # Create a random graph on 1024 vertices where each edge is 
     # included with probability p for each of the following values of p: 
     # p = 0.01, 0.02, 0.03, 0.04, and 0.05. Use (Strassen's) matrix 
