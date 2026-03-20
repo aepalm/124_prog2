@@ -1,6 +1,6 @@
 '''
 Option 1: Single-source file
-To run: python3 strassen.py <args>
+To run: python3 strassen.py <flag> <dimension> <inputfile>
 '''
 
 import numpy as np
@@ -119,6 +119,8 @@ def main():
     #experimentally optimize the cross-over point n_0
     #want to find the smallest n_0 possible
     #analytically we found n_0 = 15
+    '''
+    # testing values 
     sizes = [8, 9, 16, 17, 32, 33, 64, 65]
     for size in sizes:
         print("Matrix size: ", size)
@@ -137,7 +139,40 @@ def main():
                     print("Error: strassen and conventional mm do not match")
                     sys.exit(1)
             print("\t \t Average Time taken: ", total_time / 5)
+    '''
+    #get input arguments: flag, dimension, inputfile
+    flag = sys.argv[1]
+    dimension = int(sys.argv[2])
+    inputfile = sys.argv[3]
 
+    # input file is an ASCII file with 2d^2 integers, one per line, representing A and B
+    # first d^2 integers are A, next d^2 integers are B
+    # in row-major order: a_01, a_02, ...
+    with open(inputfile, 'r') as f:
+        data = f.read().splitlines()
+    A = [[0]*dimension for i in range(dimension)]
+    B = [[0]*dimension for i in range(dimension)]
+    for i in range(dimension):
+        for j in range(dimension):
+            A[i][j] = int(data[i*dimension + j])
+            B[i][j] = int(data[dimension*dimension + i*dimension + j])
+            
+    #call strassen on A and B, print the result
+    for n_0 in range(10,30):
+            print("\t Testing n_0: ", n_0)
+            total_time = 0
+            for _ in range(5): #run each n_0 value 5 times to get an average time
+                X = create_test_matrix(dimension)
+                Y = create_test_matrix(dimension)
+                start_time = time.perf_counter()
+                A = strassen(X, Y, dimension, n_0)
+                end_time = time.perf_counter()
+                total_time += (end_time - start_time)
+                #quick check correctness:
+                if not equal_matrix(A, conventional_mm(X, Y, dimension)):
+                    print("Error: strassen and conventional mm do not match")
+                    sys.exit(1)
+            print("\t \t Average Time taken: ", total_time / 5)
 
 if __name__ == "__main__":    
     main()
