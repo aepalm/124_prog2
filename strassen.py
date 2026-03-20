@@ -32,11 +32,9 @@ def conventional_mm(A, B, n):
     # Let C be the nxn matrix representing AB
     C = [[0]*n for i in range(n)] # Initialize C to just 0's
     for i in range(n): # Row
-        for j in range(n): # Column
-            dot_prod = 0 # Dot product of row i of A with column j of B
-            for k in range(n):
-                dot_prod += (A[i][k] * B[k][j])
-            C[i][j] = dot_prod
+        for k in range(n): 
+            for j in range(n): # Column
+                C[i][j] += A[i][k] * B[k][j]
 
     return C
 
@@ -113,13 +111,25 @@ def strassen(X,Y,n, n_0):
         return result
 
 
-def find_triangles(n): # this is for task 3
-    # Create a random graph on 1024 vertices where each edge is 
-    # included with probability p for each of the following values of p: 
-    # p = 0.01, 0.02, 0.03, 0.04, and 0.05. Use (Strassen's) matrix 
-    # multiplication code to count the number of triangles in each of these graphs, 
-    # and compare it to the expected number of triangles, which is (1024 \choose 3)*p^3. 
-    return None
+def find_triangles(p): # this is for task 3
+    # A represents original adjacency matrix:
+    # 1024x1024 of 0's and 1's with probability p of being 1
+    A = [[0]*1024 for i in range(1024)]
+    for i in range(1024):
+        for j in range(i+1, 1024):
+            if np.random.rand() < p:
+                A[i][j] = 1
+                A[j][i] = 1
+    print("running squaring")
+    # count triangles
+    A_squared = strassen(A, A, 1024, 21) # n_0 = 21 is the best value we found for various sizes
+    print("running cubing")
+    A_cubed = strassen(A_squared, A, 1024, 21)
+    triangle_count = 0
+    for i in range(1024):
+        triangle_count += A_cubed[i][i]
+
+    return triangle_count/6
 
 def main():
     flag = int(sys.argv[1])
@@ -127,7 +137,7 @@ def main():
     #experimentally optimize the cross-over point n_0
     #want to find the smallest n_0 possible
     #analytically we found n_0 = 15
-    if flag != 0:
+    if flag == 1:
         # testing values 
         sizes = [32, 33, 64, 65]
         for size in sizes:
@@ -147,6 +157,15 @@ def main():
                         print("Error: strassen and conventional mm do not match")
                         sys.exit(1)
                 print("\t \t Average Time taken: ", total_time / 20)
+    elif flag == 2: #test triangles
+        ps = [0.01, 0.02, 0.03, 0.04, 0.05]
+        for p in ps:
+            print("p: ", p)
+            triangle_count = find_triangles(p)
+            expected_count = ((1024*1023*1022)/6) * (p**3) #1024 choose 3
+            print("\t Triangle count: ", triangle_count)
+            print("\t Expected count: ", expected_count)
+    
     else:
         #after testing, n_0 = 21 is seemingly the best value for various sizes
         #get other input arguments: dimension, inputfile
