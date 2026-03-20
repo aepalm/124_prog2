@@ -116,31 +116,14 @@ def strassen(X,Y,n, n_0):
 
 
 def main():
-    '''
-    #testing our functions
-    #even n
-    X = np.array([[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]])
-    stras = strassen(X, X, 4)
-    reg = conventional_mm(X, X, 4)
-    for i in range(4):
-        for j in range(4):
-            print("i,j: ", i,j, "stras val:", stras[i][j], "reg val: ", reg[i][j])
-            
-    #odd n
-    X = np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3]])
-    stras = strassen(X, X, 3,0)
-    reg = conventional_mm(X, X, 3)
-    for i in range(3):
-        for j in range(3):
-            print("i,j: ", i,j, "stras val:", stras[i][j], "reg val: ", reg[i][j])
-    '''
-    #xpirimentally optimize the cross-over point n_0
+    #experimentally optimize the cross-over point n_0
     #want to find the smallest n_0 possible
     #analytically we found n_0 = 15
-    sizes = [8, 16, 32, 64]
-    n_0_values = [2, 4, 8, 12, 16, 20, 24, 32]    
+    sizes = [8, 9, 16, 17, 32, 33, 64, 65]
     for size in sizes:
-        for n_0 in n_0_values:
+        print("Matrix size: ", size)
+        for n_0 in range(10,30):
+            print("\t Testing n_0: ", n_0)
             total_time = 0
             for _ in range(5): #run each n_0 value 5 times to get an average time
                 X = create_test_matrix(size)
@@ -153,9 +136,7 @@ def main():
                 if not equal_matrix(A, conventional_mm(X, Y, size)):
                     print("Error: strassen and conventional mm do not match")
                     sys.exit(1)
-
-            print("n_0: ", n_0)
-            print("Average Time taken: ", total_time / 5)
+            print("\t \t Average Time taken: ", total_time / 5)
 
 
 if __name__ == "__main__":    
