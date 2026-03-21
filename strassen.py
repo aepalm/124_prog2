@@ -7,13 +7,28 @@ import numpy as np
 import time
 import sys
 
-def add_matrix(A, B):
-    n = len(A)
-    return [[A[i][j] + B[i][j] for j in range(n)] for i in range(n)]
+def add_into_quadrant(New, P, row_off, col_off, sign):
+    m = len(P)
+    for i in range(m):
+        New_i = New[row_off + i]
+        P_i = P[i]
+        for j in range(m):
+            New_i[col_off + j] += sign * P_i[j]
 
-def sub_matrix(A, B):
-    n = len(A)
-    return [[A[i][j] - B[i][j] for j in range(n)] for i in range(n)]
+
+def add_block(X, x_row, x_col, Y, y_row, y_col, n):
+    out = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            out[i][j] = X[x_row + i][x_col + j] + Y[y_row + i][y_col + j]
+    return out
+
+def sub_block(X, x_row, x_col, Y, y_row, y_col, n):
+    out = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            out[i][j] = X[x_row + i][x_col + j] - Y[y_row + i][y_col + j]
+    return out
 
 def equal_matrix(A, B):
     n = len(A)
@@ -26,89 +41,104 @@ def equal_matrix(A, B):
 def create_test_matrix(n):
     return [[np.random.randint(-1, 2) for _ in range(n)] for _ in range(n)]
 
-def conventional_mm(A, B, n):
-    # Not using any kind of numpy function for this
-    # Assume A and B are both nxn matrices
-    # Let C be the nxn matrix representing AB
-    C = [[0]*n for i in range(n)] # Initialize C to just 0's
-    for i in range(n): # Row
-        for k in range(n): 
-            for j in range(n): # Column
-                C[i][j] += A[i][k] * B[k][j]
-
+def conventional_mm(A, a_row, a_col, B, b_row, b_col, n):
+    C = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for k in range(n):
+            a = A[a_row + i][a_col + k]
+            for j in range(n):
+                C[i][j] += a * B[b_row + k][b_col + j]
     return C
 
-def strassen(X,Y,n, n_0):
+def strassen(X, x_row, x_col, Y, y_row, y_col, n, n_0):
     if n == 1:
-        return [[X[0][0] * Y[0][0]]]
-    
+        return [[X[x_row][x_col] * Y[y_row][y_col]]]
+
     if n <= n_0: #cross-over point
-        return conventional_mm(X,Y,n)
+        return conventional_mm(X,x_row, x_col, Y,y_row, y_col, n)
     
-    # Let's first assume that n is even:
-    if n % 2 == 0:
-        #divide up X and Y: 
-        New = [[0]*n for i in range(n)]
-        new_size =  n//2
-        A = [[0]*new_size for _ in range(new_size)]
-        B = [[0]*new_size for _ in range(new_size)]
-        C = [[0]*new_size for _ in range(new_size)]
-        D = [[0]*new_size for _ in range(new_size)]
-        E = [[0]*new_size for _ in range(new_size)]
-        F = [[0]*new_size for _ in range(new_size)]
-        G = [[0]*new_size for _ in range(new_size)]
-        H = [[0]*new_size for _ in range(new_size)]
-         
-        for i in range( new_size):
-            for j in range( new_size):
-                A[i][j] = X[i][j]
-                B[i][j] = X[i][j + new_size]
-                C[i][j] = X[i + new_size][j]
-                D[i][j] = X[i + new_size][j + new_size]
-                E[i][j] = Y[i][j]
-                F[i][j] = Y[i][j + new_size]
-                G[i][j] = Y[i + new_size][j]
-                H[i][j] = Y[i + new_size][j + new_size]
+    if n % 2 != 0:
+        X_padded = [[0] * (n + 1) for _ in range(n + 1)]
+        Y_padded = [[0] * (n + 1) for _ in range(n + 1)]
 
-        #products:
-        P1 = strassen(A, sub_matrix(F,H),  new_size, n_0)
-        P2 = strassen(add_matrix(A,B), H,  new_size, n_0)
-        P3 = strassen(add_matrix(C,D), E,  new_size, n_0)
-        P4 = strassen(D, sub_matrix(G,E),  new_size, n_0)
-        P5 = strassen(add_matrix(A,D), add_matrix(E,H),  new_size, n_0)
-        P6=  strassen(sub_matrix(B,D), add_matrix(G,H),  new_size, n_0)
-        P7 = strassen(sub_matrix(C,A), add_matrix(E,F),  new_size, n_0)
-
-        upper_left = add_matrix(add_matrix(sub_matrix(P4, P2), P5), P6)
-        upper_right = add_matrix(P1, P2)
-        lower_left = add_matrix(P3, P4)
-        lower_right = add_matrix(add_matrix(sub_matrix(P1, P3), P5), P7)
-
-        for i in range(new_size):
-            for j in range(new_size):
-                New[i][j] = upper_left[i][j]
-                New[i][j + new_size] = upper_right[i][j]
-                New[i + new_size][j] = lower_left[i][j]
-                New[i + new_size][j + new_size] = lower_right[i][j]
-        
-        return New
-    
-    else: #n is an odd number
-        #pad the matrices with 0's to make them even, call strassen on the new matrices, 
-        #then remove the padding from the result
-        X_padded = [[0]*(n+1) for i in range(n+1)]
-        Y_padded = [[0]*(n+1) for i in range(n+1)]
         for i in range(n):
             for j in range(n):
-                X_padded[i][j] = X[i][j]
-                Y_padded[i][j] = Y[i][j]
-                
-        result_padded = strassen(X_padded, Y_padded, n+1, n_0)
-        result = [[0]*n for i in range(n)]
+                X_padded[i][j] = X[x_row + i][x_col + j]
+                Y_padded[i][j] = Y[y_row + i][y_col + j]
+
+        result_padded = strassen(X_padded, 0, 0, Y_padded, 0, 0, n + 1, n_0)
+
+        result = [[0] * n for _ in range(n)]
         for i in range(n):
-            for j in range(n):  
+            for j in range(n):
                 result[i][j] = result_padded[i][j]
         return result
+    
+    # Let's first assume that n is even:
+    #divide up X and Y: 
+    new_size =  n//2
+    
+    #instead of creating new matrices for the submatrices we just pass in the appropriate indices
+    A = (x_row, x_col)
+    B = (x_row, x_col + new_size)
+    C = (x_row + new_size, x_col)
+    D = (x_row + new_size, x_col + new_size)
+    E = (y_row, y_col)
+    F = (y_row, y_col + new_size)
+    G = (y_row + new_size, y_col)
+    H = (y_row + new_size, y_col + new_size)
+
+    # products:
+
+    New = [[0] * n for _ in range(n)]
+
+    # P1 = A(F - H)
+    T1 = sub_block(Y, F[0], F[1], Y, H[0], H[1], new_size)
+    P = strassen(X, A[0], A[1], T1, 0, 0, new_size, n_0)
+    add_into_quadrant(New, P, 0, new_size, 1)                # C12 += P
+    add_into_quadrant(New, P, new_size, new_size, 1)         # C22 += P
+
+    # P2 = (A + B)H
+    T1 = add_block(X, A[0], A[1], X, B[0], B[1], new_size)
+    P = strassen(T1, 0, 0, Y, H[0], H[1], new_size, n_0)
+    add_into_quadrant(New, P, 0, 0, -1)                      # C11 -= P
+    add_into_quadrant(New, P, 0, new_size, 1)                # C12 += P
+
+    # P3 = (C + D)E
+    T1 = add_block(X, C[0], C[1], X, D[0], D[1], new_size)
+    P = strassen(T1, 0, 0, Y, E[0], E[1], new_size, n_0)
+    add_into_quadrant(New, P, new_size, 0, 1)                # C21 += P
+    add_into_quadrant(New, P, new_size, new_size, -1)        # C22 -= P
+
+    # P4 = D(G - E)
+    T1 = sub_block(Y, G[0], G[1], Y, E[0], E[1], new_size)
+    P = strassen(X, D[0], D[1], T1, 0, 0, new_size, n_0)
+    add_into_quadrant(New, P, 0, 0, 1)                       # C11 += P
+    add_into_quadrant(New, P, new_size, 0, 1)                # C21 += P
+
+    # P5 = (A + D)(E + H)
+    T1 = add_block(X, A[0], A[1], X, D[0], D[1], new_size)
+    T2 = add_block(Y, E[0], E[1], Y, H[0], H[1], new_size)
+    P = strassen(T1, 0, 0, T2, 0, 0, new_size, n_0)
+    add_into_quadrant(New, P, 0, 0, 1)                       # C11 += P
+    add_into_quadrant(New, P, new_size, new_size, 1)         # C22 += P
+
+    # P6 = (B - D)(G + H)
+    T1 = sub_block(X, B[0], B[1], X, D[0], D[1], new_size)
+    T2 = add_block(Y, G[0], G[1], Y, H[0], H[1], new_size)
+    P = strassen(T1, 0, 0, T2, 0, 0, new_size, n_0)
+    add_into_quadrant(New, P, 0, 0, 1)                       # C11 += P
+
+    # P7 = (C - A)(E + F)
+    T1 = sub_block(X, C[0], C[1], X, A[0], A[1], new_size)
+    T2 = add_block(Y, E[0], E[1], Y, F[0], F[1], new_size)
+    P = strassen(T1, 0, 0, T2, 0, 0, new_size, n_0)
+    add_into_quadrant(New, P, new_size, new_size, 1)         # C22 += P
+    del P
+
+    return New
+    
+   
 
 
 def find_triangles(p): # this is for task 3
@@ -122,9 +152,9 @@ def find_triangles(p): # this is for task 3
                 A[j][i] = 1
     print("running squaring")
     # count triangles
-    A_squared = strassen(A, A, 1024, 21) # n_0 = 21 is the best value we found for various sizes
+    A_squared = strassen(A, 0,0, A, 0,0, 1024, 512) # n_0 = 128 is the best value we found for various sizes
     print("running cubing")
-    A_cubed = strassen(A_squared, A, 1024, 21)
+    A_cubed = strassen(A_squared, 0,0, A, 0,0, 1024, 512)
     triangle_count = 0
     for i in range(1024):
         triangle_count += A_cubed[i][i]
@@ -149,11 +179,11 @@ def main():
                     X = create_test_matrix(size)
                     Y = create_test_matrix(size)
                     start_time = time.perf_counter()
-                    A = strassen(X, Y, size, n_0)
+                    A = strassen(X, 0,0, Y, 0,0, size, n_0)
                     end_time = time.perf_counter()
                     total_time += (end_time - start_time)
                     #quick check correctness:
-                    if not equal_matrix(A, conventional_mm(X, Y, size)):
+                    if not equal_matrix(A, conventional_mm(X, 0, 0, Y, 0, 0, size)):
                         print("Error: strassen and conventional mm do not match")
                         sys.exit(1)
                 print("\t \t Average Time taken: ", total_time / 20)
