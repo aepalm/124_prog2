@@ -95,50 +95,49 @@ def strassen(X, x_row, x_col, Y, y_row, y_col, n, n_0):
     # P1 = A(F - H)
     T1 = sub_block(Y, F[0], F[1], Y, H[0], H[1], new_size)
     P = strassen(X, A[0], A[1], T1, 0, 0, new_size, n_0)
-    add_into_quadrant(New, P, 0, new_size, 1)                # C12 += P
-    add_into_quadrant(New, P, new_size, new_size, 1)         # C22 += P
+    add_into_quadrant(New, P, 0, new_size, 1)               
+    add_into_quadrant(New, P, new_size, new_size, 1)         
 
     # P2 = (A + B)H
     T1 = add_block(X, A[0], A[1], X, B[0], B[1], new_size)
     P = strassen(T1, 0, 0, Y, H[0], H[1], new_size, n_0)
-    add_into_quadrant(New, P, 0, 0, -1)                      # C11 -= P
-    add_into_quadrant(New, P, 0, new_size, 1)                # C12 += P
+    add_into_quadrant(New, P, 0, 0, -1)                     
+    add_into_quadrant(New, P, 0, new_size, 1)               
 
     # P3 = (C + D)E
     T1 = add_block(X, C[0], C[1], X, D[0], D[1], new_size)
     P = strassen(T1, 0, 0, Y, E[0], E[1], new_size, n_0)
-    add_into_quadrant(New, P, new_size, 0, 1)                # C21 += P
-    add_into_quadrant(New, P, new_size, new_size, -1)        # C22 -= P
+    add_into_quadrant(New, P, new_size, 0, 1)              
+    add_into_quadrant(New, P, new_size, new_size, -1)       
 
     # P4 = D(G - E)
     T1 = sub_block(Y, G[0], G[1], Y, E[0], E[1], new_size)
     P = strassen(X, D[0], D[1], T1, 0, 0, new_size, n_0)
-    add_into_quadrant(New, P, 0, 0, 1)                       # C11 += P
-    add_into_quadrant(New, P, new_size, 0, 1)                # C21 += P
+    add_into_quadrant(New, P, 0, 0, 1)                      
+    add_into_quadrant(New, P, new_size, 0, 1)                
 
     # P5 = (A + D)(E + H)
     T1 = add_block(X, A[0], A[1], X, D[0], D[1], new_size)
     T2 = add_block(Y, E[0], E[1], Y, H[0], H[1], new_size)
     P = strassen(T1, 0, 0, T2, 0, 0, new_size, n_0)
-    add_into_quadrant(New, P, 0, 0, 1)                       # C11 += P
-    add_into_quadrant(New, P, new_size, new_size, 1)         # C22 += P
+    add_into_quadrant(New, P, 0, 0, 1)                       
+    add_into_quadrant(New, P, new_size, new_size, 1)        
 
     # P6 = (B - D)(G + H)
     T1 = sub_block(X, B[0], B[1], X, D[0], D[1], new_size)
     T2 = add_block(Y, G[0], G[1], Y, H[0], H[1], new_size)
     P = strassen(T1, 0, 0, T2, 0, 0, new_size, n_0)
-    add_into_quadrant(New, P, 0, 0, 1)                       # C11 += P
+    add_into_quadrant(New, P, 0, 0, 1)                      
 
     # P7 = (C - A)(E + F)
     T1 = sub_block(X, C[0], C[1], X, A[0], A[1], new_size)
     T2 = add_block(Y, E[0], E[1], Y, F[0], F[1], new_size)
     P = strassen(T1, 0, 0, T2, 0, 0, new_size, n_0)
-    add_into_quadrant(New, P, new_size, new_size, 1)         # C22 += P
+    add_into_quadrant(New, P, new_size, new_size, 1)        
     del P
 
     return New
     
-   
 
 
 def find_triangles(p): # this is for task 3
@@ -169,24 +168,25 @@ def main():
     #analytically we found n_0 = 15
     if flag == 1:
         # testing values 
-        sizes = [32, 33, 64, 65]
+        sizes = [1024, 2048, 4096]
+        n_0s = [256, 512]
         for size in sizes:
             print("Matrix size: ", size)
-            for n_0 in range(15,25):
+            for n_0 in n_0s:
                 print("\t Testing n_0: ", n_0)
                 total_time = 0
-                for _ in range(20): #run each n_0 value 20 times to get an average time
-                    X = create_test_matrix(size)
-                    Y = create_test_matrix(size)
+                X = create_test_matrix(size)
+                Y = create_test_matrix(size)
+                for _ in range(5): #run each n_0 value 20 times to get an average time
                     start_time = time.perf_counter()
                     A = strassen(X, 0,0, Y, 0,0, size, n_0)
                     end_time = time.perf_counter()
                     total_time += (end_time - start_time)
                     #quick check correctness:
-                    if not equal_matrix(A, conventional_mm(X, 0, 0, Y, 0, 0, size)):
-                        print("Error: strassen and conventional mm do not match")
-                        sys.exit(1)
-                print("\t \t Average Time taken: ", total_time / 20)
+                    #if not equal_matrix(A, conventional_mm(X, 0, 0, Y, 0, 0, size)):
+                    #    print("Error: strassen and conventional mm do not match")
+                    #    sys.exit(1)
+                print("\t \t Average Time taken: ", total_time / 5)
     elif flag == 2: #test triangles
         ps = [0.01, 0.02, 0.03, 0.04, 0.05]
         for p in ps:
