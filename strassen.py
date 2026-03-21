@@ -149,7 +149,7 @@ def find_triangles(p): # this is for task 3
                 A[j][i] = 1
     print("running squaring")
     # count triangles
-    A_squared = strassen(A, 0,0, A, 0,0, 1024, 21) # n_0 = ___ is the best value we found for various sizes
+    A_squared = strassen(A, 0,0, A, 0,0, 1024, 21) # n_0 = 120 is the best value we found for size 1024
     diag = [0]*1024
     for i in range(1024):
         for k in range(1024):
@@ -166,8 +166,8 @@ def main():
     #analytically we found n_0 = 15
     if flag == 1:
         # testing values 
-        sizes = [16,32,64,96,128,160,192,256,320,384,512]
-        n_0s = [8,16,24,32,48,64,96,128]
+        sizes = [1024]
+        n_0s = [120, 128, 136]
         
         for size in sizes:
             print("Matrix size: ", size)
