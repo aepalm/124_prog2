@@ -10,6 +10,7 @@
 \setlength{\parindent}{0.3 in}
 \setlength{\parskip}{0.1 in}
 \usepackage{epsf}
+\usepackage{bm}
 
 \def\O{\mathop{\smash{O}}\nolimits}
 \def\o{\mathop{\smash{o}}\nolimits}
@@ -31,9 +32,44 @@
 Homework is due Wednesday 2026-03-25 at 11:59pm ET. You are allowed up to {\bf twelve} late days through the semester, but the number of late days you take on each assignment must be a nonnegative integer at most {\bf two}. (Note that you have a total of 10 assignments --- 7 Problems sets and 3 Programming problem sets.)
 
 \noindent {\bf {\Large Analytical Analysis}:} 
+We first seek to find a value $n_0$ such that, when multiplying two matrices $A$ and $B$, we use the Strassen algorithm up until our submatrices are of size $n_0$, and then switch to the conventional algorithm. The idea is that we want $n_0$ (our crossover point) to make it so that our algorithm is efficient as possible. Thus, we need to find $n_0$ such that the cost of running the conventional algorithm is equal to the cost of running one more iteration of Strassen's.
+\newline
+We know the runtime of Strassen's to be $T(n) = 7T(n/2) + \Theta(n^2)$, but we must find what exactly the $\Theta$ term is so that we can compare it to our conventional algorithm. The term encompass all of the additions taking place in the algorithm, specifically, adding two matrices together each of size $n$. In our algorithm, we have 10 matrix additions or subtractions to get the values of the P's. Then, we have an additional 8 additions or subtractions to combine into output. Thus the cost of these 18 arithmetic operations (which we assume to be of cost 1 for a \textit{single} operation) is $18*(\frac{n}{2})^2$. The $\frac{n}{2}$ factor comes from each of these matrices being of that size, and it is squared because we are doing one operation per entry in each matrix. Simplifying our fraction, this gives us a runtime for Strassen's algorithm of:
+$$T(n) = 7T(n/2) + \frac{9}{2}n^2$$
+\newline
+Now we need to find the cost of the conventional matrix multiplication algorithm. When doing this algorithm, we have $n$ multiplications and $n-1$ additions for every entry. This is because the row (or column) that a specific entry is a part of will do $n$ dot products with corresponding rows/columns of the other matrix. In each of those dot products, there is also $n-1$ additions used to sum the multiplications. Thus every $n^2$ entry performs $n + n-1$ work. This gives us a runtime for the conventional algorithm of:
+$$C(n) = 2n^3 - n^2$$
+As expected, this is $\Theta(n^3)$, which we know the conventional algorithm to be. 
+\newline
+Now we can find $n_0$. We need to find the point where $C(n_0)$ (the conventional runtime) will be equal to doing one more iteration of Strassen's, \textit{then} doing conventional. We can set up an equality as follows:
+$$C(n_0) =  7C(\frac{n_0}{2}) + \frac{9}{2}(n_0)^2$$
+Note that instead of $T(n_0/2)$, we have $C(n_0/2)$, because we are looking specifically at only doing one iteration of Strassen's. Thus, what would be the cost of the further recursion is only based on the conventional algorithm. We can substitute in our formula for $C(n)$ to get:
+$$2(n_0)^3 - (n_0)^2 = 7(2(\frac{n_0}{2})^3 - (\frac{n_0}{2})^2) + \frac{9}{2}(n_0)^2 $$
+Moving the cubed terms to the left side and combining the squared terms on the right, we get:
+$$2(n_0)^3-\frac{7}{4}(n_0)^3 = \frac{15}{4}(n_0)^2$$
+Which we can simplify further to get:
+$$(n_0)^3 = 15(n_0)^2$$
+This gives us an analytical estimate of $\bm{n_0 = 15}$
+
 
 
 \noindent {\bf {\Large Experimental Analysis}:} 
+We began with some very simple implementations of both Strassen's and the conventional matrix multiplication algorithms. For Strassen's in particular, we found this to be very inefficient because we were allocating new matrices on every recursive call, each of large sizes, in order to get values for A, B, C, etc in the algorithm. To try to avoid this excessive memory allocation and copying, we decided to instead store the row and column numbers inside our matrices X and Y (the ones being multiplied together) that correspond to the start of each of the A, B, etc. matrices. We also changed the functions we were using for adding and subtracting matrices to take an output matrix as an input, so that we were not allocating new memory on every function call. Another optimization we made was to put each of the product values immediately into our new matrix, so that we could reuse that variable instead of allocating new memory for each one. 
+\newline
+In order to find the best value of $n_0$, we ran our algorithm on random matrices of sizes xxxxxxxxx. For each matrix size, we ran it on possible $n_0$ values of xxxxxxxxxx five times each, then took the average of the total time it took. We then compared those average times for each $n_0$ for each matrix size to estimate what the ideal $n_0$ value would be. We compiled our results into the following table:
+\begin{tabular}{c | c | c}
+     \textbf{Matrix size} & \textbf{Shortest average time} & \textbf{Corresponding }$\bm n_0$ \textbf{value}\\
+     32  & 0.002627 & 16 \\
+     64  & 0.019584 & 32 \\
+     96  & 0.063415 & 64 \\
+     128 & 0.148395 & 96 \\
+     160 & 0.291281 & 48 \\
+     192 & 0.503234 & 48 \\
+     256 & 1.154764 & 96 \\
+     320 & 2.811563 & 16 \\
+     384 & 3.876039 & 64 \\
+     512 & 9.762125 & 64
+\end{tabular}
 
 
 \end{document}
